@@ -21,13 +21,17 @@ jobs:
         run: |
           set -e
           mkdir -p downloads
+          : > success.txt
           while IFS= read -r url || [ -n "$url" ]; do
             url="${url#"${url%%[![:space:]]*}"}"
             url="${url%"${url##*[![:space:]]}"}"
             case "$url" in ""|\#*) continue ;; esac
             echo "Downloading: $url"
-            curl -fL --retry 3 --connect-timeout 10 --output-dir downloads -O "$url" \
-              || { echo "FAILED: $url"; exit 1; }
+            if curl -fL --retry 3 --connect-timeout 10 --output-dir downloads -O "$url"; then
+              echo "$url" >> success.txt
+            else
+              echo "FAILED (kept in urls.txt): $url"
+            fi
           done < urls.txt
 
       - name: Create release and upload assets
@@ -41,10 +45,12 @@ jobs:
             --title "Downloaded files $TAG" \
             --notes "Files downloaded from urls.txt via workflow_dispatch"
 
-      - name: Clear urls.txt and commit
+      - name: Clear successful URLs from urls.txt and commit
         run: |
-          grep -E '^\s*#' urls.txt > urls.tmp || true
-          mv urls.tmp urls.txt
+          if [ -s success.txt ]; then
+            grep -vxFf success.txt urls.txt > urls.tmp || true
+            mv urls.tmp urls.txt
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add urls.txt
