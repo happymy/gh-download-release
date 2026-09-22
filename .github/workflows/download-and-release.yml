@@ -3,6 +3,8 @@ name: Download & Release
 on:
   workflow_dispatch:
   push:
+    paths:
+      - 'urls.txt'
 
 permissions:
   contents: write
@@ -28,16 +30,6 @@ jobs:
               || { echo "FAILED: $url"; exit 1; }
           done < urls.txt
 
-      - name: Clear urls.txt and commit
-        run: |
-          grep -E '^\s*#' urls.txt > urls.tmp || true
-          mv urls.tmp urls.txt
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add urls.txt
-          git commit -m "ci: clear processed download URLs" || true
-          git push
-
       - name: Create release and upload assets
         run: |
           if [ -z "$(ls -A downloads 2>/dev/null)" ]; then
@@ -48,3 +40,13 @@ jobs:
           gh release create "$TAG" downloads/* \
             --title "Downloaded files $TAG" \
             --notes "Files downloaded from urls.txt via workflow_dispatch"
+
+      - name: Clear urls.txt and commit
+        run: |
+          grep -E '^\s*#' urls.txt > urls.tmp || true
+          mv urls.tmp urls.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add urls.txt
+          git commit -m "ci: clear processed download URLs" || true
+          git push
