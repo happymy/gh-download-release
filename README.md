@@ -29,6 +29,20 @@ https://example.com/file2.zip
 3. 完成后下载的文件可在仓库的 **Releases** 页面找到
 4. `urls.txt` 中的地址会自动清空，可继续填写下一批
 
+## 运行通知
+
+工作流运行完成时可通过 GitHub 原生通知收到邮件：
+
+1. 打开 **https://github.com/settings/notifications**
+2. 在「系统 → 操作（Actions）」处选择 **Email** 并保存
+3. 关注（Watch）本仓库（Watch → Custom → 勾选 Actions）
+
+注意：通知会发送给**触发运行的用户**，且成功、失败、取消时都会触发（无法仅成功时发送）。
+
+## 超期 Release 清理
+
+`.github/workflows/cleanup-releases.yml` 每日北京时间 03:00 自动运行，删除发布超过 7 天的 Release（含 tag），也可在 Actions 页面手动触发。
+
 ## 注意
 
 - 某地址下载失败：该地址留在 `urls.txt`，不阻塞其余地址下载与发布，可修复后重跑
