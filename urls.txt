@@ -1,2 +1,1 @@
 # 每行一个下载地址，空行与 # 注释行会被忽略。运行工作流后本文件将被清空。
-https://installers.lmstudio.ai/win32/x64/0.4.25-1/LM-Studio-0.4.25-1-x64.exe
