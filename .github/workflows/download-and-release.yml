@@ -19,7 +19,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Download files from urls.txt
         shell: bash
@@ -34,6 +34,7 @@ jobs:
             f="${f%%\?*}"
             f="${f##*/}"
             [ -z "$f" ] && f="file"
+            case "$f" in .|..) f="file" ;; esac
             stem="${f%.*}"
             ext="${f##*.}"
             if [ -e "downloads/$f" ]; then
@@ -79,7 +80,7 @@ jobs:
       - name: Clear successful URLs from urls.txt and commit
         run: |
           if [ -s success.txt ]; then
-            grep -vxFf success.txt urls.txt > urls.tmp || true
+            awk 'NR==FNR { n[$0]++; next } { if (n[$0] > 0) { n[$0]--; next } print }' success.txt urls.txt > urls.tmp
             mv urls.tmp urls.txt
           fi
           git config user.name "github-actions[bot]"

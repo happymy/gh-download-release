@@ -18,11 +18,10 @@ jobs:
       - name: Delete releases older than 7 days
         run: |
           cutoff=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)
-          export cutoff
           echo "Cutoff: $cutoff"
           gh release list -R "${{ github.repository }}" -L 1000 \
             --json tagName,publishedAt,isDraft \
-            --jq '.[] | select(.publishedAt != null and .publishedAt < env.cutoff) | .tagName' \
+            --jq ".[] | select(.publishedAt != null and .publishedAt < \"$cutoff\") | .tagName" \
             | while read -r tag; do
                 echo "Deleting release/tag: $tag"
                 gh release delete -R "${{ github.repository }}" "$tag" -y --cleanup-tag || true
