@@ -2,6 +2,7 @@ name: Download & Release
 
 on:
   workflow_dispatch:
+  push:
 
 permissions:
   contents: write
@@ -9,6 +10,8 @@ permissions:
 jobs:
   download:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
 
