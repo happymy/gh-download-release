@@ -1,0 +1,45 @@
+name: Download & Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download files from urls.txt
+        run: |
+          set -e
+          mkdir -p downloads
+          while IFS= read -r url || [ -n "$url" ]; do
+            url="${url%"${url##*[![:space:]]}"}"
+            case "$url" in ""|\#*) continue ;; esac
+            echo "Downloading: $url"
+            curl -fL --retry 3 --connect-timeout 10 --output-dir downloads -O "$url" \
+              || { echo "FAILED: $url"; exit 1; }
+          done < urls.txt
+
+      - name: Clear urls.txt and commit
+        run: |
+          > urls.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add urls.txt
+          git commit -m "ci: clear processed download URLs" || true
+          git push
+
+      - name: Create release and upload assets
+        run: |
+          if [ -z "$(ls -A downloads 2>/dev/null)" ]; then
+            echo "No files downloaded, skipping release."
+            exit 0
+          fi
+          TAG="download-$(date +%Y%m%d%H%M%S)"
+          gh release create "$TAG" downloads/* \
+            --title "Downloaded files $TAG" \
+            --notes "Files downloaded from urls.txt via workflow_dispatch"
