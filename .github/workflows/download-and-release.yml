@@ -9,27 +9,58 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   download:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Download files from urls.txt
+        shell: bash
         run: |
           set -e
           mkdir -p downloads
           : > success.txt
-          while IFS= read -r url || [ -n "$url" ]; do
+
+          pick_name() {
+            local f="$1" i=2 stem ext cand
+            f="${f%%\#*}"
+            f="${f%%\?*}"
+            f="${f##*/}"
+            [ -z "$f" ] && f="file"
+            stem="${f%.*}"
+            ext="${f##*.}"
+            if [ -e "downloads/$f" ]; then
+              while :; do
+                if [ "$f" = "$ext" ]; then
+                  cand="${stem}-${i}"
+                else
+                  cand="${stem}-${i}.${ext}"
+                fi
+                [ ! -e "downloads/$cand" ] && { f="$cand"; break; }
+                i=$((i+1))
+              done
+            fi
+            printf '%s' "$f"
+          }
+
+          while IFS= read -r line || [ -n "$line" ]; do
+            url="$line"
             url="${url#"${url%%[![:space:]]*}"}"
             url="${url%"${url##*[![:space:]]}"}"
             case "$url" in ""|\#*) continue ;; esac
-            echo "Downloading: $url"
-            if curl -fL --retry 3 --connect-timeout 10 --output-dir downloads -O "$url"; then
-              echo "$url" >> success.txt
+            fname="$(pick_name "$url")"
+            echo "Downloading: $url -> downloads/$fname"
+            if curl -fL --retry 3 --connect-timeout 10 -o "downloads/$fname" -- "$url"; then
+              echo "$line" >> success.txt
             else
+              rm -f "downloads/$fname"
               echo "FAILED (kept in urls.txt): $url"
             fi
           done < urls.txt
@@ -40,7 +71,7 @@ jobs:
             echo "No files downloaded, skipping release."
             exit 0
           fi
-          TAG="download-$(date +%Y%m%d%H%M%S)"
+          TAG="download-$(date +%Y%m%d%H%M%S)-$RANDOM"
           gh release create "$TAG" downloads/* \
             --title "Downloaded files $TAG" \
             --notes "Files downloaded from urls.txt via workflow_dispatch"

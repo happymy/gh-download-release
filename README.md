@@ -12,8 +12,8 @@ GitHub Actions 工作流（`.github/workflows/download-and-release.yml`）触发
 ### 执行步骤
 
 1. 读取 `urls.txt`，逐行下载每个 URL（跳过空行与 `#` 注释行）
-2. 将下载的文件作为资产发布到新建的 GitHub Release
-3. 清空 `urls.txt` 中的下载地址（保留 `#` 注释行）并提交推送
+2. 将下载成功的文件作为资产发布到新建的 GitHub Release
+3. 仅从 `urls.txt` 中清除下载成功的地址（保留失败地址与 `#` 注释行）并提交推送
 
 ## 使用说明
 
@@ -31,8 +31,9 @@ https://example.com/file2.zip
 
 ## 注意
 
-- 若 Release 发布失败，`urls.txt` 中的下载地址会保留，可修复后重跑
-- 发布成功后地址才会被清除
+- 某地址下载失败：该地址留在 `urls.txt`，不阻塞其余地址下载与发布，可修复后重跑
+- 若 Release 发布失败，`urls.txt` 中全部地址保留，可修复后重跑
+- 仅下载成功且 Release 发布成功后的地址会被清除
 
 ## 许可证
 
